@@ -10,6 +10,7 @@ namespace Perceptron1
     {
         public double input = 0; 
 
+        // Calculates the weighted sum of inputs
         public double Sum(Neuron[] nodes, double[] weights)
         {
             double value = 0;
@@ -22,6 +23,9 @@ namespace Perceptron1
             return value;
         }
 
+        // Squashing function
+        // Threshold is currently set to 0
+        // If >= 0 the image will be classified as bright, else dark
         public static InputImage.Label Squash(double value, double threshold)
         {
             if(value >= threshold)
