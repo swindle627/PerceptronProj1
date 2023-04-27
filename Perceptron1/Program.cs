@@ -1,9 +1,8 @@
 ﻿
 using Perceptron1;
 
-// Training will cycle until the goal correct rate is reached
-double goalCorrectRate = 1;
-int epochCounter = 1;
+// Training will cycle until the epochCount is reached
+int epochCounter = 1, epochCount = 5;
 
 // The below split is close to the 80/20 split that is common for training and testing
 int trainingCount = 12; // Number of training images (75%/25%)
@@ -56,7 +55,7 @@ foreach(InputImage image in images)
 Perceptron perceptron = new Perceptron(trainingImages);
 
 // Running the training loop
-// Training will cycle until the goalCorrectRate is reached
+// Training will cycle until the epochCount is reached
 Console.WriteLine("---- Training Phase Beginning ----\n");
 do
 {
@@ -66,12 +65,11 @@ do
     Console.WriteLine();
     epochCounter++;
 }
-while(goalCorrectRate > perceptron.GetCorrectRate());
+while(epochCount > epochCounter);
 
 // Sending the testing images to the perceptron
 perceptron.SetImages(testingImages);
 
 // Classifying test images
 Console.WriteLine("---- Testing Phase Beginning ----\n");
-perceptron.SetImages(testingImages);
 perceptron.TestClassify();
