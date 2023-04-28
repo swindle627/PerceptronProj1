@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
@@ -13,53 +14,50 @@ namespace Perceptron2
         private double[] weights;
         private Neuron[] inputLayer;
         private Neuron outputLayer;
-        private double learningRate = 0.1;
-        private List<Iris> irisList;
-        //private double 
+        //private double learningRate;
+        private List<Person> people;
 
-        public Perceptron(List<Iris> irisList)
+        public Perceptron(List<Person> people)
         {
-            this.irisList = irisList;
-            inputLayer = new Neuron[5];
+            this.people = people;
+            inputLayer = new Neuron[9]; // 8 inputs + 1 bias node
             outputLayer = new Neuron();
-            weights = new double[5];
+            weights = new double[9];
             Random rand = new Random();
 
             // sets initial weights to a random value between -1 and 1
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 9; i++)
             {
                 weights[i] = rand.NextDouble() * 2 - 1;
             }
         }
         // Used to enter test set after training
-        public void SetIrisList(List<Iris> irisList)
+        public void SetIrisList(List<Person> people)
         {
-            this.irisList = irisList;
+            this.people = people;
         }
         // Returns the correct classification rate
         public double GetCorrectRate()
         {
-            return correctRate / irisList.Count;
+            return correctRate / people.Count;
         }
         // Used to train the perceptron be recaluclating weights
-        public void TrainClassify()
+        public void TrainClassify(double learningRate)
         {
             correctRate = 0;
 
-            foreach (Iris iris in irisList)
+            foreach (Person p in people)
             {
-                SetInputs(iris);
+                SetInputs(p);
                 double value = outputLayer.Sum(inputLayer, weights);
-                Console.WriteLine(value);
-                double[] output = Neuron.Squash(new double[] { value });
-                //Console.WriteLine(output[0]);
+                p.assignedLabel = Neuron.Squash(value, p);
 
-                if(output[0] != iris.classes[iris.correctSpecies])
+                if (p.assignedLabel != p.correctLabel)
                 {
                     // Calculating error
-                    double diff = iris.classes[iris.correctSpecies] - output[0];
+                    double diff = p.correctLabel - p.assignedLabel;
 
-                    for (int i = 0; i < 5; i++)
+                    for (int i = 0; i < 9; i++)
                     {
                         // Calculating the error
                         double error = learningRate * diff * inputLayer[i].input;
@@ -71,35 +69,42 @@ namespace Perceptron2
                 {
                     correctRate++;
                 }
-                
+
             }
         }
         // Used to run the test set through the perceptron
         // When testing weights won't be adjusted
         public void TestClassify()
         {
-            foreach (Iris iris in irisList)
-            {
-                SetInputs(iris);
-                double value = outputLayer.Sum(inputLayer, weights);
-                double[] output = Neuron.Squash(new double[] { value });
+            correctRate = 0;
 
-                Console.WriteLine("Image assigned label: " + iris.classes.FirstOrDefault(x => x.Value == output[0]).Key);
-                Console.WriteLine("Image correct label: " + iris.correctSpecies);
+            foreach (Person p in people)
+            {
+                SetInputs(p);
+                double value = outputLayer.Sum(inputLayer, weights);
+                p.assignedLabel = Neuron.Squash(value, p);
+
+                if(p.assignedLabel == p.correctLabel)
+                {
+                    correctRate++;
+                }
+
+                Console.WriteLine("Image assigned label: " + p.assignedLabel);
+                Console.WriteLine("Image correct label: " + p.correctLabel);
                 Console.WriteLine();
             }
         }
         // Used to length/width values into the input layer
-        private void SetInputs(Iris iris)
+        private void SetInputs(Person p)
         {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 8; i++)
             {
                 inputLayer[i] = new Neuron();
-                inputLayer[i].input = iris.irisData[i];
+                inputLayer[i].input = p.data[i];
             }
 
-            inputLayer[4] = new Neuron();
-            inputLayer[4].input = 1;
+            inputLayer[8] = new Neuron();
+            inputLayer[8].input = 1;
         }
     }
 }

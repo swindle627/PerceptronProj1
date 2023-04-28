@@ -1,85 +1,153 @@
 ﻿using Perceptron2;
 using static System.Net.Mime.MediaTypeNames;
 
-// This program classifies Iris flowers into 3 classes: Iris Setosa, Iris Versicolour, or Iris Virginica
-// The Iris dataset contains 150 samples and comes from https://archive.ics.uci.edu/ml/datasets/iris
+// This program classifies people based into 2 classes based on whether they have diabetes or not
+// Dataset from: https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database
+// Classes are: Diabetes and No_Diabetes
 
 
-// Training will cycle until the epoch count is reached
-int epochCounter = 1, epochCount = 5;
+// Training will cycle until the correctRate is greater than or equal to the goalCorrectRate for 100 consecutive cycles
+double goalCorrectRate = 0.77;
+int epochCounter = 1, consecCorrect = 100;
 
 // The below split is the 80/20 split that is common for training and testing
-int trainingCount = 120; // Number of training irises (80%/20%)
+int diabeteTrainingCount = 215; // 80% of diabetes classified
+int noDiabeteTrainingCount = 400; // 80% of no diabetes classified
 
-// List of Iris objects
-List<Iris> irisList = new List<Iris>();
+// List of person objects
+List<Person> people = new List<Person>();
 
-// Loading in the iris dataset and using the data to create 150 instances of the iris object
-using(StreamReader sr = new StreamReader("iris.data"))
+// Loading in the iris dataset and using the data to create 150 instances of the person object
+using (StreamReader sr = new StreamReader("Dataset.csv"))
 {
+    // Initialize variables to store min and max values of each attribute
+    double[] minVals = new double[8] { double.MaxValue, double.MaxValue, double.MaxValue, double.MaxValue, double.MaxValue, double.MaxValue, double.MaxValue, double.MaxValue };
+    double[] maxVals = new double[8] { double.MinValue, double.MinValue, double.MinValue, double.MinValue, double.MinValue, double.MinValue, double.MinValue, double.MinValue };
+
+
     while (!sr.EndOfStream)
     {
         string line = sr.ReadLine();
         string[] values = line.Split(',');
 
-        Iris iris = new Iris();
-        iris.irisData[0] = double.Parse(values[0]);
-        iris.irisData[1] = double.Parse(values[1]);
-        iris.irisData[2] = double.Parse(values[2]);
-        iris.irisData[3] = double.Parse(values[3]);
-        iris.correctSpecies = values[4];
+        Person person = new Person();
+        person.data[0] = double.Parse(values[0]);
+        person.data[1] = double.Parse(values[1]);
+        person.data[2] = double.Parse(values[2]);
+        person.data[3] = double.Parse(values[3]);
+        person.data[4] = double.Parse(values[4]);
+        person.data[5] = double.Parse(values[5]);
+        person.data[6] = double.Parse(values[6]);
+        person.data[7] = double.Parse(values[7]);
+        person.correctLabel = (Person.Label)int.Parse(values[8]);
 
-        irisList.Add(iris);
+        // Update min and max values
+        for (int i = 0; i < person.data.Length; i++)
+        {
+            if (person.data[i] < minVals[i])
+            {
+                minVals[i] = person.data[i];
+            }
+            if (person.data[i] > maxVals[i])
+            {
+                maxVals[i] = person.data[i];
+            }
+        }
+
+        people.Add(person);
+    }
+
+    // Normalizing the data for increased accuracy in classification
+    foreach (Person person in people)
+    {
+        for (int i = 0; i < person.data.Length; i++)
+        {
+            person.data[i] = (person.data[i] - minVals[i]) / (maxVals[i] - minVals[i]);
+        }
     }
 }
 
-Console.WriteLine(irisList[0].irisData[0]);
-Console.WriteLine(irisList[0].irisData[1]);
-Console.WriteLine(irisList[0].irisData[2]);
-Console.WriteLine(irisList[0].irisData[3]);
-Console.WriteLine(irisList[0].correctSpecies);
 // Shuffling the elements in the list
 Random rand = new Random();
-irisList = irisList.OrderBy(x => rand.Next()).ToList();
+people = people.OrderBy(x => rand.Next()).ToList();
 
-// Initializing training and testing iris lists
-List<Iris> trainingIris = new List<Iris>();
-List<Iris> testingIris = new List<Iris>();
+// Initializing training and testing sets
+List<Person> trainingSet = new List<Person>();
+List<Person> testingSet = new List<Person>();
 
-// Filling both iris lists
-foreach (Iris iris in irisList)
+// Filling training and testing lists
+foreach (Person p in people)
 {
-    if (trainingCount > 0)
+    if(p.correctLabel == Person.Label.Diabetes && diabeteTrainingCount > 0)
     {
-        trainingIris.Add(iris);
-        trainingCount--;
+        trainingSet.Add(p);
+        diabeteTrainingCount--;
+    }
+    else if(p.correctLabel == Person.Label.No_Diabetes && noDiabeteTrainingCount > 0)
+    {
+        trainingSet.Add(p);
+        noDiabeteTrainingCount--;
     }
     else
     {
-        testingIris.Add(iris);
+        testingSet.Add(p);
     }
 }
 
 // Initializing perceptron
-Perceptron perceptron = new Perceptron(trainingIris);
+Perceptron perceptron = new Perceptron(trainingSet);
+
+// The initial value of the perceptron's learning rate
+double learningRate = 0.1;
 
 // Running the training loop
 // Training will cycle until the epochCount is reached
 Console.WriteLine("---- Training Phase Beginning ----\n");
 do
 {
-    Console.WriteLine("---- Beginning Epoch " + epochCounter + " ----");
-    perceptron.TrainClassify();
-    Console.WriteLine("Epoch " + epochCounter + " correct rate: " + perceptron.GetCorrectRate().ToString("P0"));
-    Console.WriteLine();
+    perceptron.TrainClassify(learningRate);
+    double correctRate = perceptron.GetCorrectRate();
+    Console.WriteLine("Epoch " + epochCounter + " correct rate: " + correctRate.ToString("P0"));
     epochCounter++;
+
+    // Decreasing learningRate as accuracy gets higher
+    if(correctRate >= 0.77)
+    {
+        learningRate = 0.00001;
+    }
+    else if (correctRate >= 0.75)
+    {
+        learningRate = 0.0001;
+    }
+    else if (correctRate >= 0.73)
+    {
+        learningRate = 0.001;
+    }
+    else if(correctRate >= 0.7)
+    {
+        learningRate = 0.01;
+    }
+    else
+    {
+        learningRate = 0.1;
+    }
+
+    if(correctRate >= goalCorrectRate)
+    {
+        consecCorrect--;
+    }
+    else
+    {
+        consecCorrect = 100;
+    }
 }
-while (epochCount > epochCounter);
+while (goalCorrectRate > perceptron.GetCorrectRate() || consecCorrect > 0);
 
-// Sending the testing irises to the perceptron
-perceptron.SetIrisList(testingIris);
+// Sending the testing set to the perceptron
+perceptron.SetIrisList(testingSet);
 
-// Classifying test 
+// Classifying testing set
+Console.WriteLine();
 Console.WriteLine("---- Testing Phase Beginning ----\n");
 perceptron.TestClassify();
-
+Console.WriteLine("Testing correct rate: " + perceptron.GetCorrectRate().ToString("P0"));

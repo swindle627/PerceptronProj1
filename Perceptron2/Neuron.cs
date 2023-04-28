@@ -24,24 +24,14 @@ namespace Perceptron2
         }
 
         // Squashing function
-        // Uses softmax function
-        public static double[] Squash(double[] values)
+        // Uses sigmoid function
+        public static Person.Label Squash(double value, Person p)
         {
-            double[] output = new double[values.Length];
-            double sum = 0;
+            double output = 1 / (1 + Math.Exp(-value));
 
-            for (int i = 0; i < values.Length; i++)
-            {
-                output[i] = Math.Exp(values[i]);
-                sum = sum + output[i];
-            }
+            //Console.WriteLine(p.correctLabel + " / " + output);
 
-            for (int i = 0; i < output.Length; i++)
-            {
-                output[i] = output[i] / sum;
-            }
-
-            return output;
+            return (Person.Label)Math.Round(output);
         }
     }
 }
